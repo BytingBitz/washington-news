@@ -7,74 +7,71 @@ from dotenv import load_dotenv
 import asyncio
 from datetime import datetime, timedelta
 
+intents = discord.Intents.default()
+bot = discord.Client(intents=intents)
 load_dotenv()
-token = os.getenv('DISCORD_TOKEN')
-guild_id = os.getenv('GUILD_ID')
-channel_id = os.getenv('CHANNEL_ID')
-bot = discord.Client(intents=discord.Intents.default())
-news_url = "https://newsapi.org/v2/top-headlines"
-news_key = os.getenv('API_KEY')
 
-class NewsAPIError(Exception):
-    pass
+class BotConfig:
+    def __init__(self):
+        self.token = self.get_env_variable('DISCORD_TOKEN')
+        self.guild_id = self.get_env_variable('GUILD_ID')
+        self.channel_id = self.get_env_variable('CHANNEL_ID')
+        self.news_key = self.get_env_variable('API_KEY')
+        self.news_url = 'https://newsapi.org/v2/top-headlines'
+    def get_env_variable(self, variable: str):
+        try:
+            return os.getenv(variable)
+        except KeyError:
+            raise EnvironmentError(f'Env {variable} not set!')
 
-async def get_history(channel):
-    history_urls = []
-    two_weeks_ago = datetime.now() - timedelta(weeks=1)
-    async for message in channel.history(after=two_weeks_ago):
-        if message.author == bot.user:
-            if message.embeds:
-                for embed in message.embeds:
-                    if embed.url:
-                        history_urls.append(embed.url)
-            if message.attachments:
-                for attachment in message.attachments:
-                    history_urls.append(attachment.url)
+async def get_history(channel, days: int = 7):
+    time_back = datetime.now() - timedelta(days=days)
+    history_urls = [embed.url for message in await channel.history(after=time_back).flatten() 
+                    if message.author == bot.user and message.embeds 
+                    for embed in message.embeds if embed.url]
     return history_urls
 
 async def get_news():
-    parameters = {
+    params = {
         'language': 'en',
         'sources': 'australian-financial-review',
+        'category': 'business,technology',
         'from': (datetime.now() - timedelta(days=1)).isoformat(),
-        'apiKey': news_key
+        'apiKey': config.news_key
         }
-    async with aiohttp.ClientSession() as session:
-        async with session.get(news_url, params=parameters) as response:
-            news = await response.json()
+    async with aiohttp.ClientSession() as session, session.get(config.news_url, params=params) as response:
+        news = await response.json()
     if news['status'] != 'ok':
-        raise NewsAPIError('News API returned a non-ok status')
-    print(f'News retrieved: {news["totalResults"]} results')
+        raise ValueError(f'News API returned a non-ok status:\n{news}')
     return news
 
 async def run_news(channel):
     history = await get_history(channel)
     news = await get_news()
+    print(f'News retrieved: {news["totalResults"]} results')
     news['articles'] = [article for article in news['articles'] if 'url' in article and article['url'] not in history]
+    print(f'News filtered: {len(news["articles"])} new results')
     for article in news['articles']:
         await channel.send(f'**{article["title"]}**\n{article["url"]}')
-    print(f'Posting news: {len(news["articles"])} new results')
-    await asyncio.sleep(3600)
+    print('Posting news...')
 
-@bot.event
-async def on_ready():
-    guild = await bot.fetch_guild(guild_id)
-    channel = await guild.fetch_channel(channel_id)
-    print('Setup successful')
-    fail = 0
+async def news_loop(channel):
     while True:
         try:
             await run_news(channel)
-            fail = 0
-        except (aiohttp.ClientError, asyncio.TimeoutError, NewsAPIError):
-            print('Encountered news issue, sleeping...')
-            await asyncio.sleep(30)
-        except Exception as error:
-            fail += 1
-            print(f'Encountered issue #{fail}:\n\n{error}')
-            if fail >= 10:
-                print(f'\n\n#{fail} Code aborting')
-                quit()
+            await asyncio.sleep(3600)
+        except Exception as e:
+            print(f'Encountered error:\n{e}\n\nSleeping...')
+            await asyncio.sleep(60)
+
+@bot.event
+async def on_ready():
+    print('Bot is alive...')
+    guild = await bot.fetch_guild(config.guild_id)
+    channel = await guild.fetch_channel(config.channel_id)
+    print('Setup successful')
+    bot.loop.create_task(news_loop(channel))
 
 if __name__ == "__main__":
-    bot.run(token)
+    config = BotConfig()
+    bot.run(config.token)
