@@ -1,4 +1,4 @@
-# washington News Discord Bot
+# Washington News Discord Bot
 
 ***
 # About
