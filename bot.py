@@ -2,6 +2,7 @@
 
 import discord
 import os
+import traceback
 import aiohttp
 from dotenv import load_dotenv
 import asyncio
@@ -18,6 +19,7 @@ class BotConfig:
         self.channel_id = self.get_env_variable('CHANNEL_ID')
         self.news_key = self.get_env_variable('API_KEY')
         self.news_url = 'https://newsapi.org/v2/top-headlines'
+        self.substrings = ['/markets', '/politics', '/policy', '/companies', '/technology']
     def get_env_variable(self, variable: str):
         try:
             return os.getenv(variable)
@@ -26,16 +28,18 @@ class BotConfig:
 
 async def get_history(channel, days: int = 7):
     time_back = datetime.now() - timedelta(days=days)
-    history_urls = [embed.url for message in await channel.history(after=time_back).flatten() 
-                    if message.author == bot.user and message.embeds 
-                    for embed in message.embeds if embed.url]
+    history_urls = []
+    async for message in channel.history(after=time_back):
+        if message.author == bot.user and message.embeds:
+            for embed in message.embeds:
+                if embed.url:
+                    history_urls.append(embed.url)
     return history_urls
 
 async def get_news():
     params = {
         'language': 'en',
         'sources': 'australian-financial-review',
-        'category': 'business,technology',
         'from': (datetime.now() - timedelta(days=1)).isoformat(),
         'apiKey': config.news_key
         }
@@ -43,6 +47,7 @@ async def get_news():
         news = await response.json()
     if news['status'] != 'ok':
         raise ValueError(f'News API returned a non-ok status:\n{news}')
+    news['articles'] = [article for article in news['articles'] if any(substring in article['url'] for substring in config.substrings)]
     return news
 
 async def run_news(channel):
@@ -61,7 +66,7 @@ async def news_loop(channel):
             await run_news(channel)
             await asyncio.sleep(3600)
         except Exception as e:
-            print(f'Encountered error:\n{e}\n\nSleeping...')
+            print(f'Encountered error:\n{e}\nTraceback:\n{traceback.print_exc()}\n\nSleeping...')
             await asyncio.sleep(60)
 
 @bot.event
