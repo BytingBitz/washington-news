@@ -4,7 +4,7 @@
 # About
 ---
 
-It was raining whilst I tried to do laundry, so I decided to create a Discord news bot that can keep me update with news I - mostly - care about. To do this, newsapi.org was used as it provides simple API access to news across the globe and allows 100 free requests daily. This repository is coded to only get news from the Australian Financial Review source as can be seen in the code below (from the get_news function):
+It was raining whilst I tried to do laundry, so I decided to create a Discord news bot that can keep me updated with news I - mostly - care about. To do this, newsapi.org was used as it provides simple API access to news across the globe and allows 100 free requests daily. This repository is coded to only get news from the Australian Financial Review source as can be seen in the code below (from the get_news function):
 
 ```python
     params = {
