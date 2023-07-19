@@ -19,7 +19,7 @@ class BotConfig:
         self.channel_id = self.get_env_variable('CHANNEL_ID')
         self.news_key = self.get_env_variable('API_KEY')
         self.news_url = 'https://newsapi.org/v2/top-headlines'
-        self.substrings = ['/markets', '/politics', '/policy', '/companies', '/technology']
+        self.substrings = ['/policy', '/companies', '/technology']
     def get_env_variable(self, variable: str):
         try:
             return os.getenv(variable)
