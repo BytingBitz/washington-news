@@ -2,7 +2,6 @@
 
 ***
 # About
----
 
 It was raining whilst I tried to do laundry, so I decided to create a Discord news bot that can keep me updated with news I - mostly - care about. To do this, newsapi.org was used as it provides simple API access to news across the globe and allows 100 free requests daily. This repository is coded to only get news from the Australian Financial Review source as can be seen in the code below (from the get_news function):
 
@@ -34,7 +33,6 @@ async def news_loop(channel):
 
 ***
 # Setup
----
 
 You will need to create a Discord bot application with permissions to read messages, send messages and view message history. You will need to get the bot to join your Discord server. I am to lazy to write how to do that, Google it. Once that is done and you have cloned this repository, you will need to create a .env file - I strongly recommend not publicly committing the contents of this .env file. You will need Discord developer mode to get some of this information, again Google if needed.
 
@@ -59,18 +57,15 @@ docker ps -a                                                # Look at docker stu
 
 ***
 # Acknowledgements
----
 
 I was to lazy to figure some things out myself, so shout out to GPT-4 for doing some of the boring stuff for me. Otherwise cheers to Discord and newsapi.org for having good documentation and easy to use APIs. 
 
 ***
 # Future
----
 
 This is becoming a trend with my repositories - I don't have any clue where this repository will go and I make no promises about anything. I do like the idea of taking some user arguments - maybe to query specific news topics. Reactions for more information could be cool as well... who knows.
 
 ***
 # License
----
 
 GNU GENERAL PUBLIC LICENSE.
