@@ -26,10 +26,9 @@ class BotConfig:
         except KeyError:
             raise EnvironmentError(f'Env {variable} not set!')
 
-async def get_history(channel, days: int = 7):
-    time_back = datetime.now() - timedelta(days=days)
+async def get_history(channel):
     history_urls = []
-    async for message in channel.history(after=time_back):
+    async for message in channel.history(limit=500):
         if message.author == bot.user and message.embeds:
             for embed in message.embeds:
                 if embed.url:
