@@ -27,13 +27,14 @@ class BotConfig:
             raise EnvironmentError(f'Env {variable} not set!')
 
 async def get_history(channel):
-    history_urls = []
+    history_data = {'descriptions': [], 'urls': []}
     async for message in channel.history(limit=500):
         if message.author == bot.user and message.embeds:
             for embed in message.embeds:
-                if embed.url:
-                    history_urls.append(embed.url)
-    return history_urls
+                if embed.url and embed.description:
+                    history_data['descriptions'].append(embed.description)
+                    history_data['urls'].append(embed.url)
+    return history_data
 
 async def get_news():
     params = {
@@ -53,7 +54,9 @@ async def run_news(channel):
     history = await get_history(channel)
     news = await get_news()
     print(f'News retrieved: {news["totalResults"]} results')
-    news['articles'] = [article for article in news['articles'] if 'url' in article and article['url'] not in history]
+    news['articles'] = [article for article in news['articles'] if 'url' in article and 'title' in article]
+    news['articles'] = [article for article in news['articles'] if article['url'] not in history['urls']]
+    news['articles'] = [article for article in news['articles'] if article['title'] not in history['descriptions']]
     print(f'News filtered: {len(news["articles"])} new results')
     for article in news['articles']:
         await channel.send(f'**{article["title"]}**\n{article["url"]}')
