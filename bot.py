@@ -60,7 +60,7 @@ async def run_news(channel):
     print(f'News filtered: {len(news["articles"])} new results')
     for article in news['articles']:
         await channel.send(f'**{article["title"]}**\n{article["url"]}')
-    print('Posting news...')
+    print('No news to post...' if len(news["articles"]) == 0 else 'Posting news...')
 
 async def news_loop(channel):
     while True:
