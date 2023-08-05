@@ -19,21 +19,29 @@ class BotConfig:
         self.channel_id = self.get_env_variable('CHANNEL_ID')
         self.news_key = self.get_env_variable('API_KEY')
         self.news_url = 'https://newsapi.org/v2/top-headlines'
-        self.substrings = ['/policy', '/companies', '/technology']
+        self.substrings = ['/policy/', '/companies/', '/technology/']
     def get_env_variable(self, variable: str):
         env_var = os.getenv(variable)
         if env_var is None:
             raise EnvironmentError(f'Env {variable} not set!')
         return env_var
 
+async def get_message_data(message):
+    if message.author != bot.user or not message.embeds:
+        return None
+    for embed in message.embeds:
+        if not embed.url or not embed.description:
+            return None
+        return {'title': embed.description, 'url': embed.url}
+
 async def get_history(channel):
     history_data = {'titles': [], 'urls': []}
     async for message in channel.history(limit=500):
-        if message.author == bot.user and message.embeds:
-            for embed in message.embeds:
-                if embed.url and embed.description:
-                    history_data['titles'].append(embed.description)
-                    history_data['urls'].append(embed.url)
+        message_data = await get_message_data(message)
+        if message_data == None:
+            continue
+        history_data['titles'].append(message_data['title'])
+        history_data['urls'].append(message_data['url'])
     return history_data
 
 async def get_news():
@@ -43,24 +51,37 @@ async def get_news():
         'from': (datetime.now() - timedelta(days=1)).isoformat(),
         'apiKey': config.news_key
         }
-    async with aiohttp.ClientSession() as session, session.get(config.news_url, params=params) as response:
-        news = await response.json()
+    async with aiohttp.ClientSession() as session:
+        async with session.get(config.news_url, params=params) as response:
+            news = await response.json()
     if news['status'] != 'ok':
         raise ValueError(f'News API returned a non-ok status:\n{news}')
-    news['articles'] = [article for article in news['articles'] if any(substring in article['url'] for substring in config.substrings)]
     return news
 
-async def run_news(channel):
+async def filter_news(news, channel):
     history = await get_history(channel)
-    news = await get_news()
-    print(f'News retrieved: {news["totalResults"]} results')
-    news['articles'] = [article for article in news['articles'] if 'url' in article and 'title' in article]
-    news['articles'] = [article for article in news['articles'] if article['url'] not in history['urls']]
-    news['articles'] = [article for article in news['articles'] if article['title'] not in history['titles']]
-    print(f'News filtered: {len(news["articles"])} new results')
+    for article in news['articles'].copy():
+        if 'url' not in article or 'title' not in article:
+            news['articles'].remove(article)
+        elif not any(substring in article['url'] for substring in config.substrings):
+            news['articles'].remove(article)
+        elif article['url'] in history['urls'] or article['title'] in history['titles']:
+            news['articles'].remove(article)
+    return news
+
+async def post_news(news, channel):
+    if len(news['articles']) == 0:
+        return
     for article in news['articles']:
         await channel.send(f'**{article["title"]}**\n{article["url"]}')
-    print('No news to post...' if len(news["articles"]) == 0 else 'Posting news...')
+
+async def run_news(channel):
+    news = await get_news()
+    print(f'News retrieved: {news["totalResults"]} results')
+    news = await filter_news(news, channel)
+    print(f'News filtered: {len(news["articles"])} new results')
+    await post_news(news, channel)
+    print(f'Posted {len(news["articles"])} new results...')
 
 async def news_loop(channel):
     while True:
@@ -68,8 +89,8 @@ async def news_loop(channel):
             await run_news(channel)
             await asyncio.sleep(3600)
         except Exception as e:
-            print(f'Encountered error:\n{e}\nTraceback:\n{traceback.print_exc()}\n\nSleeping...')
-            await asyncio.sleep(60)
+            print(f'Encountered error:\n{e}\n{traceback.print_exc()}\nSleeping...')
+            await asyncio.sleep(600)
 
 @bot.event
 async def on_ready():
