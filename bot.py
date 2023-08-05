@@ -21,10 +21,10 @@ class BotConfig:
         self.news_url = 'https://newsapi.org/v2/top-headlines'
         self.substrings = ['/policy', '/companies', '/technology']
     def get_env_variable(self, variable: str):
-        try:
-            return os.getenv(variable)
-        except KeyError:
+        env_var = os.getenv(variable)
+        if env_var is None:
             raise EnvironmentError(f'Env {variable} not set!')
+        return env_var
 
 async def get_history(channel):
     history_data = {'titles': [], 'urls': []}
