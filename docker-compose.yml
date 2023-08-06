@@ -3,3 +3,4 @@ services:
   discord-bot:
     build: .
     restart: unless-stopped
+    container_name: washington
