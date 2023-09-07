@@ -12,6 +12,8 @@ services:
         limits:
           cpus: '0.5'
           memory: 750M
+    networks:
+      - web
 
 networks:
   web:
