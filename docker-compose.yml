@@ -7,7 +7,7 @@ services:
     build: .
     deploy:
       restart_policy:
-        condition: on-failure
+        condition: any
       resources:
         limits:
           cpus: '0.5'
