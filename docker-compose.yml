@@ -1,6 +1,14 @@
-version: "3.9"
+version: "3.8"
+
 services:
   discord-bot:
-    build: .
-    restart: unless-stopped
     container_name: washington
+    read_only: true
+    build: .
+    deploy:
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 750M
