@@ -12,3 +12,7 @@ services:
         limits:
           cpus: '0.5'
           memory: 750M
+
+networks:
+  web:
+    name: washington_web
