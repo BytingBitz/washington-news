@@ -21,7 +21,7 @@ class BotConfig:
         self.news_url = 'https://newsapi.org/v2/top-headlines'
         self.substrings = ['/policy/', '/companies/', '/technology/']
     def get_env_variable(self, variable: str):
-        env_var = os.getenv(variable)
+        env_var = os.environ[variable]
         if env_var is None:
             raise EnvironmentError(f'Env {variable} not set!')
         return env_var

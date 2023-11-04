@@ -5,13 +5,10 @@ services:
     container_name: washington
     read_only: true
     build: .
-    deploy:
-      restart_policy:
-        condition: any
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 750M
+    env_file: .env
+    restart: any
+    cpus: '0.5'
+    mem_limit: 750M
     networks:
       - web
 

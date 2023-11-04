@@ -1,10 +1,15 @@
 FROM python:3.10.2-slim-buster
 
-WORKDIR /app
+RUN adduser --disabled-password --gecos '' --shell /usr/sbin/nologin user
 
-COPY requirements.txt requirements.txt
-RUN pip3 install -r requirements.txt
+WORKDIR /app
 
 COPY . .
 
-CMD [ "python3", "-u", "bot.py"]
+RUN pip install --no-cache-dir -r requirements.txt \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+USER user
+
+CMD [ "python", "-u", "bot.py"]
