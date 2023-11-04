@@ -6,7 +6,7 @@ services:
     read_only: true
     build: .
     env_file: .env
-    restart: any
+    restart: always
     cpus: '0.5'
     mem_limit: 750M
     networks:
