@@ -46,7 +46,7 @@ async def get_history(channel):
 async def get_news():
     params = {
         'language': 'en',
-        'sources': 'bloomberg,business-insider',
+        'sources': 'business-insider',
         'from': (datetime.now() - timedelta(days=1)).isoformat(),
         'apiKey': config.news_key
         }
