@@ -3,20 +3,25 @@
 ***
 # About
 
-It was raining whilst I tried to do laundry, so I decided to create a Discord news bot that can keep me updated with news I - mostly - care about. To do this, newsapi.org was used as it provides simple API access to news across the globe and allows 100 free requests daily. This repository is coded to only get news from the Australian Financial Review source as can be seen in the code below (from the get_news function):
+It was raining whilst I tried to do laundry, so I decided to create a Discord news bot that can keep me updated with news I - mostly - care about. To do this, newsapi.org was used as it provides simple API access to news across the globe and allows 100 free requests daily. This repository is coded to only get news from Business Insider and Bloomberg sources as can be seen in the code below:
 
 ```python
+async def get_news():
     params = {
         'language': 'en',
-        'sources': 'australian-financial-review',
+        'sources': 'bloomberg,business-insider',
         'from': (datetime.now() - timedelta(days=1)).isoformat(),
         'apiKey': config.news_key
         }
-    async with aiohttp.ClientSession() as session, session.get(config.news_url, params=params) as response:
-        news = await response.json()
+    async with aiohttp.ClientSession() as session:
+        async with session.get(config.news_url, params=params) as response:
+            news = await response.json()
+    if news['status'] != 'ok':
+        raise ValueError(f'News API returned a non-ok status:\n{news}')
+    return news
 ```
 
-Many other sources are available through newsapi.org - alongside other types of requests. If you choose to customise this, you will need to remove the substring code from the get_news function and BotConfig. This code is used to filter down Australian Financial Review topics further, as they specify topic in their URLs.
+Many other sources are available through newsapi.org - alongside other types of requests.
 
 This bot works quite simply overall - every hour it will get the latest news and post the title and url for that news in the specified Discord guild and channel, provided that news has not already been posted in that channel within the last 7 days by the bot. It will try keep running indefinitely - like any good bot should.
 

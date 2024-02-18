@@ -19,7 +19,6 @@ class BotConfig:
         self.channel_id = self.get_env_variable('CHANNEL_ID')
         self.news_key = self.get_env_variable('API_KEY')
         self.news_url = 'https://newsapi.org/v2/top-headlines'
-        self.substrings = ['/policy/', '/companies/', '/technology/']
     def get_env_variable(self, variable: str):
         env_var = os.environ[variable]
         if env_var is None:
@@ -47,7 +46,7 @@ async def get_history(channel):
 async def get_news():
     params = {
         'language': 'en',
-        'sources': 'australian-financial-review',
+        'sources': 'bloomberg,business-insider',
         'from': (datetime.now() - timedelta(days=1)).isoformat(),
         'apiKey': config.news_key
         }
@@ -63,9 +62,7 @@ async def filter_news(news, channel):
     for article in news['articles'].copy():
         if 'url' not in article or 'title' not in article:
             news['articles'].remove(article)
-        elif not any(substring in article['url'] for substring in config.substrings):
-            news['articles'].remove(article)
-        elif article['url'] in history['urls'] or article['title'] in history['titles']:
+        if article['url'] in history['urls'] or article['title'] in history['titles']:
             news['articles'].remove(article)
     return news
 
@@ -73,7 +70,7 @@ async def post_news(news, channel):
     if len(news['articles']) == 0:
         return
     for article in news['articles']:
-        await channel.send(f'**{article["title"]}**\n{article["url"]}')
+        await channel.send(f'**{article["title"]}**\n\n{article["description"]}\n\n{article["url"]}')
 
 async def run_news(channel):
     news = await get_news()
